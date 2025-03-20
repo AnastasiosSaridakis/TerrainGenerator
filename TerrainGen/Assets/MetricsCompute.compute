@@ -1,0 +1,18 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+static const uint numThreads = 8;
+
+int _ChunkSize;
+
+[numthreads(8,8,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    
+}
+
+int indexFromCoord(int x, int y, int z)
+{
+    return x + _ChunkSize * (y + _ChunkSize * z);
+}
+

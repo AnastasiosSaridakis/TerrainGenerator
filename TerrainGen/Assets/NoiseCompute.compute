@@ -1,0 +1,39 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel GenerateNoise
+
+#include "FastNoiseLite.compute"
+#include "MetricsCompute.compute"
+
+RWStructuredBuffer<float> _Weights;
+
+float _NoiseScale;
+float _Amplitude;
+float _Frequency;
+int _Octaves;
+float _GroundPercent;
+int _Scale;
+int _GroundLevel;
+float3 _ChunkPosition;
+float3 _Offset;
+
+[numthreads(numThreads, numThreads, numThreads)]
+void GenerateNoise (uint3 id : SV_DispatchThreadID)
+{
+    fnl_state noise = fnlCreateState();
+    noise.noise_type = FNL_NOISE_OPENSIMPLEX2;
+    noise.fractal_type = FNL_FRACTAL_RIDGED;
+    noise.frequency = _Frequency;
+    noise.octaves = _Octaves;
+
+    float3 pos = ((id+_ChunkPosition +(_ChunkPosition/_ChunkSize)*-1) * _NoiseScale)/(_ChunkSize-1)*_Scale;
+    float ground = -pos.y + (_GroundPercent * _GroundLevel);
+    float n = ground + fnlGetNoise3D(noise, pos.x, pos.y, pos.z) * _Amplitude;
+    _Weights[indexFromCoord(id.x, id.y, id.z)] = n;
+
+    // float3 pos = (id * _NoiseScale)/(_ChunkSize-1)*_Scale;
+    // float3 posGlobal = (_ChunkPosition * _NoiseScale)/(_ChunkSize-1)*_Scale;
+    // float ground = -pos.y-posGlobal.y + (_GroundPercent * _GroundLevel);
+    // float n = ground + fnlGetNoise3D(noise, pos.x+posGlobal.x, pos.y+posGlobal.y, pos.z+posGlobal.z) * _Amplitude;
+    // _Weights[indexFromCoord(id.x, id.y, id.z)] = n;
+}
+
